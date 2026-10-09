@@ -629,8 +629,8 @@ function footStep(dt, inp) {
     mx /= len;
     mz /= len;
     const cy = camYaw;
-    const wx = Math.sin(cy) * mz + Math.cos(cy) * mx;
-    const wz = Math.cos(cy) * mz - Math.sin(cy) * mx;
+    const wx = Math.sin(cy) * mz - Math.cos(cy) * mx;
+    const wz = Math.cos(cy) * mz + Math.sin(cy) * mx;
     const target = Math.atan2(wx, wz);
     let d = target - player.psi;
     d = Math.atan2(Math.sin(d), Math.cos(d));
@@ -1109,13 +1109,17 @@ function frame(now) {
 
 function inputState() {
   const k = keys;
+  const t = window.touchControls;
+  const jx = t && t.active ? t.x : 0;
+  const jy = t && t.active ? t.y : 0;
+  const keySteer = (k.a || k.arrowleft ? 1 : 0) - (k.d || k.arrowright ? 1 : 0);
   return {
-    th: k.w || k.arrowup ? 1 : 0,
-    br: k.s || k.arrowdown ? 1 : 0,
+    th: k.w || k.arrowup || jy > 0.25 ? 1 : 0,
+    br: k.s || k.arrowdown || jy < -0.25 ? 1 : 0,
     hb: k[" "] ? 1 : 0,
-    steer: (k.a || k.arrowleft ? 1 : 0) - (k.d || k.arrowright ? 1 : 0),
-    left: k.a || k.arrowleft ? 1 : 0,
-    right: k.d || k.arrowright ? 1 : 0,
+    steer: Math.max(-1, Math.min(1, keySteer - jx)),
+    left: k.a || k.arrowleft || jx < -0.2 ? 1 : 0,
+    right: k.d || k.arrowright || jx > 0.2 ? 1 : 0,
   };
 }
 
