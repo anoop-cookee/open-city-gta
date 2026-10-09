@@ -900,7 +900,7 @@ function carStep(dt, inp) {
     H = 0.5,
     redline = spec.topRpm;
   const road = onRoad(occupied.x, occupied.z);
-  const surf = road ? 1 : 0.55;
+  const surf = road ? 1 : 0.9;
   player.wr = WR;
   player.thr = inp.th;
   player.brk = inp.br && player.vx > 1;
@@ -958,7 +958,7 @@ function carStep(dt, inp) {
   const drag =
     0.4 * player.vx * Math.abs(player.vx) +
     150 * Math.tanh(player.vx) +
-    (1 - surf) * 4000 * Math.tanh(player.vx) +
+    (1 - surf) * 600 * Math.tanh(player.vx) +
     (inp.th ? 0 : 350 * Math.tanh(player.vx));
   const ax =
       (Fd + Fb - Fyf * Math.sin(player.delta) - drag) / M + player.w * player.vy,
@@ -1008,7 +1008,8 @@ function footStep(dt, inp) {
   let mx = (inp.right ? 1 : 0) - (inp.left ? 1 : 0),
     mz = (inp.th ? 1 : 0) - (inp.br ? 1 : 0);
   const len = Math.hypot(mx, mz);
-  let sp = inp.hb ? 6.5 : 3.4;
+  const onPave = onRoad(player.x, player.z);
+  let sp = inp.hb ? (onPave ? 7.6 : 6.8) : (onPave ? 4.2 : 3.6);
   if (len > 0) {
     mx /= len;
     mz /= len;
