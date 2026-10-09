@@ -1,0 +1,309 @@
+#gamecenter,
+#gameview {
+  position: fixed;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: max(14px, env(safe-area-inset-top))
+    max(14px, env(safe-area-inset-right))
+    max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+  background: radial-gradient(circle at 50% 0%, #1b2136, #070a12 70%);
+  color: #fff;
+  font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+  z-index: 30;
+}
+#gamecenter.show,
+#gameview.show {
+  display: flex;
+}
+.gc-head,
+.gv-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 0 0 auto;
+  margin-bottom: 10px;
+}
+.gc-title,
+.gv-title {
+  margin: 0;
+  font-size: clamp(22px, 5vw, 38px);
+  letter-spacing: 4px;
+  font-style: italic;
+  color: var(--acc, #ffcc00);
+}
+.gc-head .spacer,
+.gv-head .spacer {
+  flex: 1;
+}
+.gc-btn {
+  border: 0;
+  border-radius: 24px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 800;
+  background: var(--acc, #ffcc00);
+  color: #1a1000;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.gc-btn.ghost {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+#gc-grid {
+  flex: 1 1 auto;
+  overflow: auto;
+  padding-bottom: 8px;
+}
+.gc-section {
+  margin: 14px 4px 8px;
+  font-size: 12px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+.gc-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+.gc-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  text-align: left;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  cursor: pointer;
+}
+.gc-card:hover,
+.gc-card:active {
+  background: rgba(255, 204, 0, 0.16);
+  border-color: var(--acc, #ffcc00);
+}
+.gc-icon {
+  font-size: 30px;
+}
+.gc-name {
+  font-size: 16px;
+  font-weight: 800;
+}
+.gc-desc {
+  font-size: 12px;
+  line-height: 1.4;
+  opacity: 0.7;
+}
+.gc-score {
+  margin-top: 2px;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--acc, #ffcc00);
+}
+
+#gv-stage {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  padding: 6px;
+}
+.mg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 460px;
+}
+.mg-hud {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 360px;
+  font-size: 13px;
+  letter-spacing: 1px;
+}
+.mg-hud b {
+  font-size: 16px;
+  color: var(--acc, #ffcc00);
+}
+.mg-best {
+  color: #5ce1ff;
+  opacity: 0.9;
+}
+.mg-btn {
+  padding: 10px 22px;
+  border: 0;
+  border-radius: 24px;
+  background: var(--acc, #ffcc00);
+  color: #1a1000;
+  font-weight: 800;
+  cursor: pointer;
+}
+.mg-msgline {
+  min-height: 20px;
+  font-size: 14px;
+  color: #5ce1ff;
+}
+.mg-canvas {
+  width: 100%;
+  max-width: 360px;
+  aspect-ratio: 1 / 1;
+  border-radius: 12px;
+  touch-action: none;
+}
+.mg-dpad {
+  display: grid;
+  grid-template-columns: repeat(3, 56px);
+  grid-template-rows: repeat(2, 56px);
+  gap: 8px;
+}
+.mg-dpad button {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border-radius: 12px;
+  font-size: 20px;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+.mg-dpad button:nth-child(1) {
+  grid-column: 2;
+  grid-row: 1;
+}
+.mg-dpad button:nth-child(2) {
+  grid-column: 1;
+  grid-row: 2;
+}
+.mg-dpad button:nth-child(3) {
+  grid-column: 2;
+  grid-row: 2;
+}
+.mg-dpad button:nth-child(4) {
+  grid-column: 3;
+  grid-row: 2;
+}
+.mg-dpad button:active {
+  background: var(--acc, #ffcc00);
+  color: #1a1000;
+}
+
+.g2048-board {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  width: min(90vw, 340px);
+  aspect-ratio: 1 / 1;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  touch-action: none;
+}
+.g2048-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  font-size: clamp(16px, 5vw, 28px);
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.06);
+}
+.g2048-board.over::after {
+  content: "GAME OVER";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.6);
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+.mem-board {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  width: min(90vw, 340px);
+}
+.mem-card {
+  aspect-ratio: 1 / 1;
+  border: 0;
+  border-radius: 12px;
+  background: linear-gradient(160deg, #243049, #141a28);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(20px, 7vw, 34px);
+}
+.mem-card.up,
+.mem-card.done {
+  background: rgba(255, 204, 0, 0.16);
+}
+.mem-card.done {
+  opacity: 0.6;
+}
+
+.ttt-board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  width: min(80vw, 300px);
+  aspect-ratio: 1 / 1;
+}
+.ttt-cell {
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  font-size: clamp(28px, 10vw, 52px);
+  font-weight: 800;
+  color: #fff;
+  cursor: pointer;
+}
+.ttt-cell.x {
+  color: #5ce1ff;
+}
+.ttt-cell.o {
+  color: #ff2d95;
+}
+
+#prompt {
+  position: fixed;
+  left: 50%;
+  bottom: max(96px, calc(env(safe-area-inset-bottom) + 96px));
+  transform: translateX(-50%) translateY(10px);
+  padding: 10px 20px;
+  border: 1px solid var(--acc, #ffcc00);
+  border-radius: 30px;
+  background: rgba(10, 12, 18, 0.75);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  z-index: 15;
+  cursor: pointer;
+}
+#prompt.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+body.ui-open #touch,
+body.ui-open #prompt {
+  display: none !important;
+}

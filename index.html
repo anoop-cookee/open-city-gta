@@ -14,6 +14,7 @@
     <link rel="manifest" href="assets/icons/site.webmanifest" />
     <meta name="theme-color" content="#0b0d12" />
     <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/minigames.css" />
   </head>
   <body>
     <canvas id="c"></canvas>
@@ -43,19 +44,39 @@
     <div class="hud" id="msg"></div>
     <div class="hud" id="help">
       W/↑ forward · S/↓ back · A D/←→ steer · SPACE handbrake · F enter/exit car
-      · C camera · R reset
+      · E enter building · C camera · R reset
     </div>
     <div id="touch">
       <div id="stick"><div id="nub"></div></div>
       <div id="tbtns">
+        <button class="tbtn" data-key="e">E</button>
         <button class="tbtn" data-key="f">F</button>
         <button class="tbtn" data-key="c">C</button>
         <button class="tbtn" data-key="r">R</button>
         <button class="tbtn hb" data-key=" ">HANDBRAKE</button>
       </div>
     </div>
+    <div id="prompt">Enter GAME CENTER · E</div>
+    <div id="gamecenter">
+      <div class="gc-head">
+        <h1 class="gc-title">GAME CENTER</h1>
+        <span class="spacer"></span>
+        <button class="gc-btn" id="gc-leave">Leave</button>
+      </div>
+      <div id="gc-grid"></div>
+    </div>
+    <div id="gameview">
+      <div class="gv-head">
+        <h1 class="gv-title" id="gv-title">GAME</h1>
+        <span class="spacer"></span>
+        <button class="gc-btn ghost" id="gv-back">Back</button>
+        <button class="gc-btn" id="gv-leave">Leave</button>
+      </div>
+      <div id="gv-stage"></div>
+    </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="js/touch.js"></script>
+    <script src="js/minigames.js"></script>
     <script src="js/main.js"></script>
   </body>
 </html>

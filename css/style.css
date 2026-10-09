@@ -198,7 +198,7 @@ body.touch #help {
   right: max(20px, env(safe-area-inset-right));
   bottom: max(24px, env(safe-area-inset-bottom));
   display: grid;
-  grid-template-columns: repeat(3, 60px);
+  grid-template-columns: repeat(2, 60px);
   gap: 12px;
   align-items: end;
   pointer-events: none;
@@ -222,7 +222,7 @@ body.touch #help {
   border-color: var(--acc);
 }
 #tbtns .hb {
-  grid-column: 1 / span 3;
+  grid-column: 1 / span 2;
   height: 52px;
   border-radius: 26px;
   font-size: 14px;

@@ -145,6 +145,28 @@ scene.add(cityGround);
   });
 }
 
+// ---- Game Center (arcade) reserved block
+const ARCADE_I = 4,
+  ARCADE_J = 4;
+let arcade = null;
+let arcadeDoorMat = null;
+const arcadeSign = tex(512, 128, (g, w, h) => {
+  g.fillStyle = "#0b0f1a";
+  g.fillRect(0, 0, w, h);
+  for (let x = 0; x < w; x += 18) {
+    g.fillStyle = x % 36 ? "#ff2d95" : "#5ce1ff";
+    g.fillRect(x, 6, 9, 5);
+    g.fillRect(x, h - 11, 9, 5);
+  }
+  g.font = "bold 72px system-ui, sans-serif";
+  g.textAlign = "center";
+  g.textBaseline = "middle";
+  g.shadowColor = "#ff2d95";
+  g.shadowBlur = 26;
+  g.fillStyle = "#ffd23f";
+  g.fillText("GAME CENTER", w / 2, h / 2 + 3);
+});
+
 // blocks: sidewalk platform + buildings
 const bMat = [];
 for (let i = 0; i < 6; i++) bMat.push(0x3d424d + ((Math.random() * 0x181818) | 0));
@@ -174,6 +196,70 @@ for (let i = 0; i < LINES.length - 1; i++) {
       bz1 = z1 - ROADW / 2 - SIDEWALK;
     const bw = bx1 - bx0,
       bd = bz1 - bz0;
+
+    // reserved block: build the Game Center instead of random towers
+    if (i === ARCADE_I && j === ARCADE_J) {
+      const ax0 = bx0 + 3,
+        ax1 = bx1 - 3,
+        az0 = bz0 + 13,
+        az1 = bz1 - 3;
+      const acx = (ax0 + ax1) / 2;
+      const ah = 18;
+
+      const shell = new THREE.Mesh(
+        new THREE.BoxGeometry(ax1 - ax0, ah, az1 - az0),
+        new THREE.MeshStandardMaterial({ color: 0x1a1f2e, roughness: 0.9 }),
+      );
+      shell.position.set(acx, 0.25 + ah / 2, (az0 + az1) / 2);
+      shell.castShadow = true;
+      shell.receiveShadow = true;
+      scene.add(shell);
+      boxes.push({ x0: ax0, x1: ax1, z0: az0, z1: az1 });
+
+      // neon marquee sign facing the street
+      const sign = new THREE.Mesh(
+        new THREE.PlaneGeometry(Math.min(ax1 - ax0, 90), 6),
+        new THREE.MeshBasicMaterial({ map: arcadeSign, toneMapped: false }),
+      );
+      sign.position.set(acx, 12.5, az0 - 0.06);
+      sign.rotation.y = Math.PI;
+      scene.add(sign);
+
+      // glowing doorway
+      arcadeDoorMat = new THREE.MeshBasicMaterial({
+        color: 0x5ce1ff,
+        transparent: true,
+        opacity: 0.8,
+        toneMapped: false,
+      });
+      const door = new THREE.Mesh(new THREE.PlaneGeometry(7, 4.4), arcadeDoorMat);
+      door.position.set(acx, 2.45, az0 - 0.08);
+      door.rotation.y = Math.PI;
+      scene.add(door);
+
+      // canopy light
+      const glow = new THREE.PointLight(0xff5fc8, 1.2, 34, 2);
+      glow.position.set(acx, 6, az0 - 2);
+      scene.add(glow);
+
+      // ground marker + trigger point out front
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(1.7, 2.3, 36),
+        new THREE.MeshBasicMaterial({
+          color: 0xffd23f,
+          transparent: true,
+          opacity: 0.6,
+          side: THREE.DoubleSide,
+          toneMapped: false,
+        }),
+      );
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.set(acx, 0.27, az0 - 7);
+      scene.add(ring);
+      arcade = { x: acx, z: az0 - 7, r: 3.4 };
+      continue;
+    }
+
     const dist = Math.hypot(cx, cz);
     const downtown = Math.max(0, 1 - dist / (CITY * 0.85));
     const mode = Math.random();
@@ -655,14 +741,34 @@ function footStep(dt, inp) {
 
 // ---- Input
 const keys = {};
+let paused = false;
+let promptShown = false;
+const uiOpen = () => !!(window.MiniGames && window.MiniGames.isOpen);
+
+function openArcade() {
+  if (!arcade || player.mode !== "foot" || uiOpen()) return;
+  for (const k in keys) keys[k] = 0;
+  window.MiniGames.open();
+}
+function tryEnterArcade() {
+  if (!arcade || player.mode !== "foot") return;
+  if (Math.hypot(player.x - arcade.x, player.z - arcade.z) >= arcade.r) return;
+  openArcade();
+}
+
 addEventListener("keydown", (e) => {
+  if (uiOpen()) return;
   keys[e.key.toLowerCase()] = 1;
   if (e.key === "c") hood = !hood;
   if (e.key === "r") resetPlayer();
   if (e.key.toLowerCase() === "f") toggleEnter();
+  if (e.key.toLowerCase() === "e") tryEnterArcade();
   if (e.key === " ") e.preventDefault();
 });
-addEventListener("keyup", (e) => (keys[e.key.toLowerCase()] = 0));
+addEventListener("keyup", (e) => {
+  if (uiOpen()) return;
+  keys[e.key.toLowerCase()] = 0;
+});
 
 function resetPlayer() {
   player.x = 0;
@@ -965,7 +1071,7 @@ function frame(now) {
   requestAnimationFrame(frame);
   let dt = Math.min(0.05, (now - last) / 1000);
   last = now;
-  if (run) {
+  if (run && !paused) {
     acc += dt;
     while (acc >= 1 / 120) {
       if (player.mode === "car") carStep(1 / 120, inputState());
@@ -1075,6 +1181,20 @@ function frame(now) {
   );
   sun.target.position.set(player.x, 0, player.z);
 
+  if (arcadeDoorMat) arcadeDoorMat.opacity = 0.55 + 0.3 * Math.sin(now * 0.004);
+
+  // arcade interaction prompt
+  const nearArcade =
+    run &&
+    !paused &&
+    arcade &&
+    player.mode === "foot" &&
+    Math.hypot(player.x - arcade.x, player.z - arcade.z) < arcade.r;
+  if (nearArcade !== promptShown) {
+    promptShown = nearArcade;
+    $("prompt").classList.toggle("show", nearArcade);
+  }
+
   // HUD
   if (++fr % 3 === 0) {
     $("kmh").textContent = Math.round(sp * 3.6);
@@ -1130,6 +1250,19 @@ player.x = startCar.x;
 player.z = startCar.z;
 player.psi = startCar.psi;
 char.g.visible = false;
+
+if (window.MiniGames) {
+  window.MiniGames.onOpen = () => {
+    paused = true;
+    promptShown = false;
+    $("prompt").classList.remove("show");
+  };
+  window.MiniGames.onClose = () => {
+    paused = false;
+  };
+}
+const promptEl = $("prompt");
+if (promptEl) promptEl.addEventListener("click", openArcade);
 
 $("go").onclick = () => {
   $("start").remove();
