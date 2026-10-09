@@ -48,9 +48,17 @@
       games
         .filter((g) => g.section === sec)
         .forEach((g) => {
-          const card = document.createElement("button");
+          const isLink = !!g.link;
+          const card = document.createElement(isLink ? "a" : "button");
           card.className = "gc-card";
           card.dataset.id = g.id;
+          if (isLink) {
+            card.href = g.link;
+            card.target = "_blank";
+            card.rel = "noopener noreferrer";
+          } else {
+            card.addEventListener("click", () => startGame(g));
+          }
           card.innerHTML =
             '<span class="gc-icon">' +
             g.icon +
@@ -58,10 +66,9 @@
             g.title +
             '</span><span class="gc-desc">' +
             g.desc +
-            '</span><span class="gc-score">BEST ' +
-            getScore(g.id) +
+            '</span><span class="gc-score">' +
+            (isLink ? "PLAY ↗" : "BEST " + getScore(g.id)) +
             "</span>";
-          card.addEventListener("click", () => startGame(g));
           row.appendChild(card);
         });
       grid.appendChild(row);
@@ -70,7 +77,8 @@
   function refreshCards() {
     grid.querySelectorAll(".gc-card").forEach((card) => {
       const el = card.querySelector(".gc-score");
-      if (el) el.textContent = "BEST " + getScore(card.dataset.id);
+      if (el && card.tagName !== "A")
+        el.textContent = "BEST " + getScore(card.dataset.id);
     });
   }
 
@@ -758,5 +766,25 @@
     },
   };
 
-  games = [Snake, Game2048, Memory, TicTacToe];
+  // ---- Archer (external game — opens in a new tab)
+  const Archer = {
+    id: "archer",
+    title: "Archer",
+    section: "Arcade",
+    icon: "🏹",
+    desc: "Hold to draw, release to hit the moving target",
+    link: "https://archergame.vercel.app/",
+  };
+
+  // ---- Snake Classic (external game — opens in a new tab)
+  const SnakeClassic = {
+    id: "snake-classic",
+    title: "Snake Classic",
+    section: "Arcade",
+    icon: "🐍",
+    desc: "Classic Snake game.",
+    link: "https://snake-game-woad.vercel.app/",
+  };
+
+  games = [Snake, SnakeClassic, Archer, Game2048, Memory, TicTacToe];
 })();
