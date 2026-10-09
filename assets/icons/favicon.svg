@@ -1,0 +1,231 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Outer Border Gradient -->
+    <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffcc00"/>
+      <stop offset="40%" stop-color="#ff8800"/>
+      <stop offset="85%" stop-color="#ff3b30"/>
+      <stop offset="100%" stop-color="#d61a2c"/>
+    </linearGradient>
+
+    <!-- Background Radial Gradient -->
+    <radialGradient id="bgGrad" cx="50%" cy="41%" r="62%">
+      <stop offset="0%" stop-color="#1f2638"/>
+      <stop offset="60%" stop-color="#0d121a"/>
+      <stop offset="100%" stop-color="#05070a"/>
+    </radialGradient>
+
+    <!-- Police Strobe Glows -->
+    <radialGradient id="redStrobe" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ff2222" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#ff2222" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="blueStrobe" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1a8cff" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#1a8cff" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Star Shading -->
+    <radialGradient id="starHalo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffe64d" stop-opacity="0.75"/>
+      <stop offset="50%" stop-color="#ff9900" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#ff6600" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="starLight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff58c"/>
+      <stop offset="100%" stop-color="#ffcc00"/>
+    </linearGradient>
+    <linearGradient id="starDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+
+    <!-- Road & Underglow -->
+    <radialGradient id="underglow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ff3326" stop-opacity="0.7"/>
+      <stop offset="60%" stop-color="#cc1a0d" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="roadGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#10141f" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#05070d"/>
+    </linearGradient>
+
+    <!-- Car Shading -->
+    <linearGradient id="carBodyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ff5959"/>
+      <stop offset="35%" stop-color="#e0152b"/>
+      <stop offset="75%" stop-color="#a60a15"/>
+      <stop offset="100%" stop-color="#73050d"/>
+    </linearGradient>
+    <linearGradient id="roofGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#242938"/>
+      <stop offset="100%" stop-color="#0f131c"/>
+    </linearGradient>
+    <linearGradient id="windshieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0d121c"/>
+      <stop offset="45%" stop-color="#38bdf8" stop-opacity="0.92"/>
+      <stop offset="60%" stop-color="#1e293b" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#0a0e17"/>
+    </linearGradient>
+    <linearGradient id="carbonHood" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#292e3d"/>
+      <stop offset="100%" stop-color="#121620"/>
+    </linearGradient>
+    <linearGradient id="splitterGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffcc00"/>
+      <stop offset="50%" stop-color="#fff299"/>
+      <stop offset="100%" stop-color="#ffcc00"/>
+    </linearGradient>
+
+    <!-- Headlight Glow -->
+    <radialGradient id="xenonGlowL" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="25%" stop-color="#e0f7fe"/>
+      <stop offset="50%" stop-color="#0284c7" stop-opacity="0.75"/>
+      <stop offset="100%" stop-color="#0369a1" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="xenonGlowR" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="25%" stop-color="#e0f7fe"/>
+      <stop offset="50%" stop-color="#0284c7" stop-opacity="0.75"/>
+      <stop offset="100%" stop-color="#0369a1" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Clip Path for Badge Content -->
+    <clipPath id="badgeClip">
+      <rect x="20" y="20" width="472" height="472" rx="110" ry="110"/>
+    </clipPath>
+  </defs>
+
+  <!-- Clip inside Squircle -->
+  <g clip-path="url(#badgeClip)">
+    <!-- Base Background -->
+    <rect x="0" y="0" width="512" height="512" fill="url(#bgGrad)"/>
+
+    <!-- Police Siren Flares -->
+    <circle cx="120" cy="160" r="190" fill="url(#redStrobe)"/>
+    <circle cx="392" cy="160" r="190" fill="url(#blueStrobe)"/>
+
+    <!-- Skyline Silhouette -->
+    <g fill="#121724" opacity="0.95">
+      <rect x="28" y="150" width="42" height="270"/>
+      <rect x="74" y="110" width="44" height="310"/>
+      <rect x="122" y="180" width="38" height="240"/>
+      <rect x="352" y="175" width="40" height="245"/>
+      <rect x="396" y="105" width="46" height="315"/>
+      <rect x="446" y="145" width="38" height="275"/>
+    </g>
+
+    <!-- Skyscraper Antenna -->
+    <line x1="419" y1="70" x2="419" y2="105" stroke="#5a7399" stroke-width="2.5"/>
+    <circle cx="419" cy="68" r="3.5" fill="#ff4033"/>
+
+    <!-- Lit Windows -->
+    <g fill="#ffcc00" opacity="0.85">
+      <rect x="84" y="130" width="5" height="8"/>
+      <rect x="102" y="130" width="5" height="8"/>
+      <rect x="84" y="155" width="5" height="8"/>
+      <rect x="102" y="180" width="5" height="8"/>
+      <rect x="408" y="125" width="5" height="8"/>
+      <rect x="426" y="150" width="5" height="8"/>
+      <rect x="408" y="175" width="5" height="8"/>
+    </g>
+    <g fill="#38bdf8" opacity="0.85">
+      <rect x="44" y="175" width="5" height="8"/>
+      <rect x="102" y="205" width="5" height="8"/>
+      <rect x="426" y="125" width="5" height="8"/>
+      <rect x="458" y="165" width="5" height="8"/>
+    </g>
+
+    <!-- Golden Wanted Star Halo -->
+    <circle cx="256" cy="180" r="155" fill="url(#starHalo)"/>
+
+    <!-- 3D Beveled GTA Wanted Star -->
+    <g id="wantedStar">
+      <!-- Outer points: (256, 45), (384, 138), (335, 289), (177, 289), (128, 138) -->
+      <!-- Inner points: (291, 131), (313, 211), (256, 237), (199, 211), (221, 131) -->
+      <!-- Light Facets -->
+      <polygon points="256,180 256,45 221,131" fill="url(#starLight)"/>
+      <polygon points="256,180 128,138 199,211" fill="url(#starLight)"/>
+      <polygon points="256,180 177,289 256,237" fill="url(#starLight)"/>
+      <polygon points="256,180 335,289 313,211" fill="url(#starLight)"/>
+      <polygon points="256,180 384,138 291,131" fill="url(#starLight)"/>
+
+      <!-- Dark Facets -->
+      <polygon points="256,180 256,45 291,131" fill="url(#starDark)"/>
+      <polygon points="256,180 384,138 313,211" fill="url(#starDark)"/>
+      <polygon points="256,180 335,289 256,237" fill="url(#starDark)"/>
+      <polygon points="256,180 177,289 199,211" fill="url(#starDark)"/>
+      <polygon points="256,180 128,138 221,131" fill="url(#starDark)"/>
+    </g>
+
+    <!-- Underglow & Asphalt Road -->
+    <circle cx="256" cy="440" r="195" fill="url(#underglow)"/>
+    <rect x="0" y="415" width="512" height="97" fill="url(#roadGrad)"/>
+    <rect x="251" y="445" width="10" height="40" fill="#ffcc00" opacity="0.5"/>
+
+    <!-- Supercar Tires & Wheels -->
+    <rect x="50" y="350" width="46" height="78" rx="10" ry="10" fill="#10121a"/>
+    <rect x="416" y="350" width="46" height="78" rx="10" ry="10" fill="#10121a"/>
+    <rect x="78" y="362" width="4" height="54" fill="#bcc5db" opacity="0.5"/>
+    <rect x="430" y="362" width="4" height="54" fill="#bcc5db" opacity="0.5"/>
+    <rect x="84" y="372" width="6" height="26" fill="#ffcc00"/>
+    <rect x="422" y="372" width="6" height="26" fill="#ffcc00"/>
+
+    <!-- Rear Racing Spoiler -->
+    <rect x="146" y="242" width="220" height="8" fill="#141720"/>
+    <rect x="172" y="250" width="8" height="16" fill="#141720"/>
+    <rect x="332" y="250" width="8" height="16" fill="#141720"/>
+
+    <!-- Cockpit & Windshield -->
+    <path d="M 170 286 Q 196 238 256 238 Q 316 238 342 286 Z" fill="url(#roofGrad)"/>
+    <path d="M 176 284 Q 200 244 256 244 Q 312 244 336 284 Q 296 281 256 281 Q 216 281 176 284 Z" fill="url(#windshieldGrad)"/>
+
+    <!-- Side Mirrors -->
+    <polygon points="166,280 136,272 132,282 158,288" fill="#d91627"/>
+    <polygon points="346,280 376,272 380,282 354,288" fill="#d91627"/>
+
+    <!-- Car Body (Cherry Red) -->
+    <path d="M 144 288 L 108 308 L 76 342 L 72 412 L 128 412 L 144 402 L 368 402 L 384 412 L 440 412 L 436 342 L 404 308 L 368 288 Z" 
+          fill="url(#carBodyGrad)" stroke="#000000" stroke-width="2" stroke-opacity="0.4"/>
+
+    <!-- Hood Sculpt: Carbon Wedge & Gold Pin-stripe -->
+    <polygon points="206,290 192,350 256,366 320,350 306,290" fill="url(#carbonHood)" stroke="#ffcc00" stroke-width="2"/>
+
+    <!-- Dual Hood Heat Extractors -->
+    <polygon points="152,316 168,312 166,328 150,330" fill="#0d1017"/>
+    <polygon points="344,316 360,312 358,328 342,330" fill="#0d1017"/>
+
+    <!-- Front Air Intake Grille & Divider Fins -->
+    <polygon points="144,364 368,364 380,404 132,404" fill="#080a10"/>
+    <line x1="256" y1="364" x2="256" y2="404" stroke="#475569" stroke-width="2"/>
+    <line x1="198" y1="365" x2="194" y2="404" stroke="#475569" stroke-width="2"/>
+    <line x1="314" y1="365" x2="318" y2="404" stroke="#475569" stroke-width="2"/>
+
+    <!-- Front Splitter with Gold Lip -->
+    <rect x="114" y="408" width="284" height="10" fill="url(#splitterGrad)"/>
+    <rect x="244" y="407" width="24" height="11" rx="2" ry="2" fill="#ffcc00"/>
+
+    <!-- Xenon LED Headlights (Slanted Aggressive Eyes) -->
+    <!-- Left Headlight -->
+    <ellipse cx="138" cy="348" rx="42" ry="22" fill="url(#xenonGlowL)"/>
+    <polygon points="104,338 164,348 174,362 114,352" fill="#0b0e14" stroke="#38bdf8" stroke-width="2"/>
+    <polygon points="110,340 160,349 168,359 118,350" fill="#bae6fd"/>
+    <polygon points="116,341 156,349 162,357 122,349" fill="#ffffff"/>
+
+    <!-- Right Headlight -->
+    <ellipse cx="374" cy="348" rx="42" ry="22" fill="url(#xenonGlowR)"/>
+    <polygon points="408,338 348,348 338,362 398,352" fill="#0b0e14" stroke="#38bdf8" stroke-width="2"/>
+    <polygon points="402,340 352,349 344,359 394,350" fill="#bae6fd"/>
+    <polygon points="396,341 356,349 350,357 390,349" fill="#ffffff"/>
+
+    <!-- Amber DRL Strips -->
+    <polygon points="108,360 146,366 140,371 104,364" fill="#ffaa00"/>
+    <polygon points="404,360 366,366 372,371 408,364" fill="#ffaa00"/>
+  </g>
+
+  <!-- Glowing Squircle Outer Frame -->
+  <rect x="20" y="20" width="472" height="472" rx="110" ry="110" fill="none" stroke="url(#borderGrad)" stroke-width="12"/>
+  <rect x="32" y="32" width="448" height="448" rx="98" ry="98" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-opacity="0.15"/>
+</svg>
