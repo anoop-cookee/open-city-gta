@@ -104,6 +104,7 @@ const CITY = 560,
 const LINES = [];
 for (let i = -HALFLINES; i <= HALFLINES; i++) LINES.push(i * BLOCK);
 const boxes = []; // building AABBs {x0,x1,z0,z1}
+const lotBlocks = []; // parking-lot block interiors
 const pOff = {
   polygonOffset: true,
   polygonOffsetFactor: -2,
@@ -260,6 +261,25 @@ for (let i = 0; i < LINES.length - 1; i++) {
       continue;
     }
 
+    // reserved: surface parking lots (filled with parked vehicles later)
+    if ((i * 7 + j * 11) % 13 === 0) {
+      lotBlocks.push({
+        x0: bx0 + 2,
+        x1: bx1 - 2,
+        z0: bz0 + 2,
+        z1: bz1 - 2,
+      });
+      const booth = new THREE.Mesh(
+        new THREE.BoxGeometry(3.4, 3, 3.4),
+        new THREE.MeshStandardMaterial({ color: 0xced2d8, roughness: 0.7 }),
+      );
+      booth.position.set(bx0 + 4, 0.25 + 1.5, bz0 + 4);
+      booth.castShadow = true;
+      scene.add(booth);
+      boxes.push({ x0: bx0 + 2.3, x1: bx0 + 5.7, z0: bz0 + 2.3, z1: bz0 + 5.7 });
+      continue;
+    }
+
     const dist = Math.hypot(cx, cz);
     const downtown = Math.max(0, 1 - dist / (CITY * 0.85));
     const mode = Math.random();
@@ -346,12 +366,87 @@ function resolve(p, r) {
   return hit;
 }
 
-// ---- Car factory
+// ---- Vehicle factory
 const paintColors = [
   0xc4001a, 0x1a63c4, 0xe8b400, 0x1f9d4d, 0xdddddd, 0x222222, 0xe06a10,
-  0x7a1fd0, 0x18b6b6, 0xd44a8a,
+  0x7a1fd0, 0x18b6b6, 0xd44a8a, 0xf2f2f2, 0x0b3d91,
 ];
-function makeCar(color) {
+const CAR_TYPES = ["sedan", "sports", "van", "taxi", "muscle"];
+const BIKE_TYPES = ["sport", "cruiser", "scooter"];
+
+const CAR_SPECS = {
+  sedan: {
+    name: "Sedan", mass: 1300, torque: 420, grip: 1.0, Iz: 2000,
+    wbA: 1.2, wbB: 1.4, topRpm: 7700, wr: 0.33, colR: 1.5,
+    wtrack: 0.98, fz: 1.4, rz: -1.4, front: 2.26, rear: -2.26,
+  },
+  sports: {
+    name: "Sports", mass: 1130, torque: 520, grip: 1.16, Iz: 1650,
+    wbA: 1.25, wbB: 1.35, topRpm: 8400, wr: 0.34, colR: 1.5,
+    wtrack: 1.02, fz: 1.35, rz: -1.35, front: 2.2, rear: -2.2,
+  },
+  van: {
+    name: "Van", mass: 1950, torque: 380, grip: 0.92, Iz: 2750,
+    wbA: 1.45, wbB: 1.65, topRpm: 6800, wr: 0.38, colR: 1.6,
+    wtrack: 1.02, fz: 1.55, rz: -1.55, front: 2.38, rear: -2.38,
+  },
+  taxi: {
+    name: "Taxi", mass: 1350, torque: 415, grip: 1.0, Iz: 2050,
+    wbA: 1.2, wbB: 1.4, topRpm: 7600, wr: 0.33, colR: 1.5,
+    wtrack: 0.98, fz: 1.4, rz: -1.4, front: 2.26, rear: -2.26,
+  },
+  muscle: {
+    name: "Muscle", mass: 1520, torque: 485, grip: 0.96, Iz: 2200,
+    wbA: 1.3, wbB: 1.5, topRpm: 7600, wr: 0.35, colR: 1.55,
+    wtrack: 1.0, fz: 1.45, rz: -1.45, front: 2.28, rear: -2.28,
+  },
+};
+const BIKE_SPECS = {
+  sport: {
+    name: "Sport Bike", mass: 230, torque: 78, grip: 1.3, Iz: 120,
+    wbA: 0.75, wbB: 0.85, topRpm: 9200, wr: 0.33, colR: 0.9,
+    wtrack: 0, fz: 0.78, rz: -0.78, front: 1.0, rear: -1.0,
+  },
+  cruiser: {
+    name: "Cruiser", mass: 300, torque: 60, grip: 1.15, Iz: 160,
+    wbA: 0.85, wbB: 0.95, topRpm: 7000, wr: 0.32, colR: 0.95,
+    wtrack: 0, fz: 0.85, rz: -0.85, front: 1.05, rear: -1.05,
+  },
+  scooter: {
+    name: "Scooter", mass: 165, torque: 34, grip: 1.05, Iz: 85,
+    wbA: 0.7, wbB: 0.8, topRpm: 6600, wr: 0.26, colR: 0.8,
+    wtrack: 0, fz: 0.72, rz: -0.72, front: 0.95, rear: -0.95,
+  },
+};
+
+function makeWheel(g, wheels, fw, x, z, r, isFront, width) {
+  const st = new THREE.Group(),
+    sp = new THREE.Group();
+  st.position.set(x, r, z);
+  const tire = new THREE.Mesh(
+    new THREE.CylinderGeometry(r, r, width, 22),
+    new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.9 }),
+  );
+  tire.rotation.z = Math.PI / 2;
+  tire.castShadow = true;
+  const rim = new THREE.Mesh(
+    new THREE.CylinderGeometry(r * 0.62, r * 0.62, width + 0.02, 10),
+    new THREE.MeshStandardMaterial({
+      color: 0xbbbbbb,
+      metalness: 1,
+      roughness: 0.25,
+    }),
+  );
+  rim.rotation.z = Math.PI / 2;
+  sp.add(tire, rim);
+  st.add(sp);
+  g.add(st);
+  wheels.push(sp);
+  if (isFront) fw.push(st);
+}
+
+function makeCar(color, type = "sedan") {
+  const spec = CAR_SPECS[type] || CAR_SPECS.sedan;
   const g = new THREE.Group(),
     b = new THREE.Group();
   g.add(b);
@@ -391,49 +486,108 @@ function makeCar(color) {
     b.add(me);
     return me;
   }
-  box(1.9, 0.5, 4.5, paint, 0, 0.6, 0);
-  box(1.78, 0.18, 1.5, paint, 0, 0.9, 1.4, 0.12);
-  box(1.6, 0.45, 1.9, glass, 0, 0.98, -0.35);
-  box(1.5, 0.08, 1.3, paint, 0, 1.22, -0.35);
-  box(1.95, 0.12, 0.5, blk, 0, 0.34, 2.2);
-  box(2, 0.08, 0.7, blk, 0, 1.12, -2.1);
-  box(0.45, 0.12, 0.05, headM, 0.65, 0.72, 2.26);
-  box(0.45, 0.12, 0.05, headM, -0.65, 0.72, 2.26);
-  box(0.6, 0.1, 0.05, tailM, 0.6, 0.8, -2.26);
-  box(0.6, 0.1, 0.05, tailM, -0.6, 0.8, -2.26);
+  if (type === "van") {
+    box(2.0, 0.7, 4.7, paint, 0, 0.72, 0);
+    box(2.0, 1.2, 3.5, paint, 0, 1.62, -0.55);
+    box(1.9, 0.55, 1.0, glass, 0, 1.6, 1.45, 0.1);
+    box(2.02, 0.42, 2.4, glass, 0, 1.95, -0.5);
+    box(2.04, 0.1, 3.6, paint, 0, 2.27, -0.55);
+    box(1.95, 0.14, 0.5, blk, 0, 0.42, 2.3);
+    box(2.05, 0.1, 0.7, blk, 0, 1.1, -2.35);
+  } else if (type === "sports") {
+    box(1.98, 0.42, 4.4, paint, 0, 0.52, 0);
+    box(1.8, 0.16, 1.7, paint, 0, 0.76, 1.45, 0.16);
+    box(1.55, 0.4, 1.7, glass, 0, 0.86, -0.3);
+    box(1.45, 0.06, 1.1, paint, 0, 1.06, -0.45);
+    box(1.7, 0.06, 0.45, blk, 0, 1.02, -2.25);
+    box(1.98, 0.1, 0.5, blk, 0, 0.34, 2.2);
+  } else {
+    box(type === "muscle" ? 2.0 : 1.9, 0.5, 4.5, paint, 0, 0.6, 0);
+    box(1.78, 0.18, 1.5, paint, 0, 0.9, 1.4, 0.12);
+    box(1.6, 0.45, 1.9, glass, 0, 0.98, -0.35);
+    box(1.5, 0.08, 1.3, paint, 0, 1.22, -0.35);
+    box(1.95, 0.12, 0.5, blk, 0, 0.34, 2.2);
+    box(2, 0.08, 0.7, blk, 0, 1.12, -2.1);
+    if (type === "muscle") {
+      box(0.8, 0.14, 0.6, blk, 0, 1.02, 1.1);
+      box(1.7, 0.06, 0.45, blk, 0, 1.06, -2.24);
+    }
+    if (type === "taxi") {
+      const signM = new THREE.MeshStandardMaterial({
+        color: 0x111111,
+        emissive: 0xffcc33,
+        emissiveIntensity: 1.2,
+        toneMapped: false,
+      });
+      box(0.7, 0.28, 0.5, signM, 0, 1.45, -0.35);
+    }
+  }
+  box(0.45, 0.12, 0.05, headM, 0.65, 0.72, spec.front);
+  box(0.45, 0.12, 0.05, headM, -0.65, 0.72, spec.front);
+  box(0.6, 0.1, 0.05, tailM, 0.6, 0.8, spec.rear);
+  box(0.6, 0.1, 0.05, tailM, -0.6, 0.8, spec.rear);
   const wheels = [],
     fw = [];
   [
-    [-0.98, 1.4, 1],
-    [0.98, 1.4, 1],
-    [-0.98, -1.4, 0],
-    [0.98, -1.4, 0],
-  ].forEach(([x, z, f]) => {
-    const st = new THREE.Group(),
-      sp = new THREE.Group();
-    st.position.set(x, 0.34, z);
-    const tire = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.34, 0.34, 0.3, 24),
-      new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.9 }),
-    );
-    tire.rotation.z = Math.PI / 2;
-    tire.castShadow = true;
-    const rim = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.22, 0.22, 0.32, 10),
-      new THREE.MeshStandardMaterial({
-        color: 0xbbbbbb,
-        metalness: 1,
-        roughness: 0.25,
-      }),
-    );
-    rim.rotation.z = Math.PI / 2;
-    sp.add(tire, rim);
-    st.add(sp);
-    g.add(st);
-    wheels.push(sp);
-    if (f) fw.push(st);
+    [-spec.wtrack, spec.fz, 1],
+    [spec.wtrack, spec.fz, 1],
+    [-spec.wtrack, spec.rz, 0],
+    [spec.wtrack, spec.rz, 0],
+  ].forEach(([x, z, f]) =>
+    makeWheel(g, wheels, fw, x, z, spec.wr, f, type === "van" ? 0.36 : 0.3),
+  );
+  return { g, b, wheels, fw, tailM, brake: 0, kind: "car", type, spec };
+}
+
+function makeBike(color, type = "sport") {
+  const spec = BIKE_SPECS[type] || BIKE_SPECS.sport;
+  const g = new THREE.Group(),
+    b = new THREE.Group();
+  g.add(b);
+  const paint = new THREE.MeshPhysicalMaterial({
+    color,
+    metalness: 0.7,
+    roughness: 0.28,
+    clearcoat: 1,
+    clearcoatRoughness: 0.1,
   });
-  return { g, b, wheels, fw, tailM, brake: 0 };
+  const blk = new THREE.MeshStandardMaterial({ color: 0x121212, roughness: 0.6 });
+  const chrome = new THREE.MeshStandardMaterial({
+    color: 0xcfcfcf,
+    metalness: 1,
+    roughness: 0.25,
+  });
+  const tailM = new THREE.MeshStandardMaterial({
+    color: 0x330000,
+    emissive: 0xff0000,
+    emissiveIntensity: 0.6,
+  });
+  const headM = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    emissive: 0xfff2cc,
+    emissiveIntensity: 1.4,
+  });
+  function box(w, h, d, m, x, y, z, rx) {
+    const me = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+    me.position.set(x, y, z);
+    if (rx) me.rotation.x = rx;
+    me.castShadow = true;
+    b.add(me);
+    return me;
+  }
+  box(0.3, 0.32, 1.5, paint, 0, 0.72, 0);
+  box(0.34, 0.16, 0.85, blk, 0, 0.88, -0.5);
+  box(0.3, 0.26, 0.6, paint, 0, 0.92, 0.35);
+  box(0.1, 0.62, 0.1, chrome, 0, 0.86, 0.72, -0.28);
+  box(0.68, 0.06, 0.06, blk, 0, 1.1, 0.62);
+  box(0.16, 0.16, 0.1, headM, 0, 1.0, 0.82);
+  box(0.14, 0.1, 0.06, tailM, 0, 0.92, -0.92);
+  box(0.1, 0.1, 0.6, chrome, 0.17, 0.5, -0.35);
+  const wheels = [],
+    fw = [];
+  makeWheel(g, wheels, fw, 0, spec.fz, spec.wr, 1, 0.12);
+  makeWheel(g, wheels, fw, 0, spec.rz, spec.wr, 0, 0.16);
+  return { g, b, wheels, fw, tailM, brake: 0, kind: "bike", type, spec };
 }
 
 function makePoliceCar() {
@@ -536,6 +690,7 @@ const player = {
   hp: 100,
   heat: 0,
   walkSpeed: 0,
+  wr: 0.33,
 };
 const char = makeChar();
 scene.add(char.g);
@@ -552,27 +707,121 @@ scene.add(startCar.g);
 const cars = [startCar];
 
 // ---- Traffic cars
-function spawnTraffic() {
+function spawnTraffic(bikeChance = 0.15) {
   const axis = Math.random() < 0.5 ? "x" : "z";
   const line = LINES[(Math.random() * LINES.length) | 0];
   const color = paintColors[(Math.random() * paintColors.length) | 0];
-  const car = makeCar(color);
-  car.ai = {
+  const isBike = Math.random() < bikeChance;
+  const veh = isBike
+    ? makeBike(color, BIKE_TYPES[(Math.random() * BIKE_TYPES.length) | 0])
+    : makeCar(color, CAR_TYPES[(Math.random() * CAR_TYPES.length) | 0]);
+  veh.ai = {
     axis,
     road: line,
     pos: (Math.random() - 0.5) * CITY * 2,
     dir: Math.random() < 0.5 ? 1 : -1,
-    speed: 9 + Math.random() * 7,
-    turnP: 0.25,
+    speed: isBike ? 14 + Math.random() * 9 : 9 + Math.random() * 7,
+    turnP: isBike ? 0.4 : 0.25,
     lastLine: 1e9,
   };
-  car.x = axis === "x" ? car.ai.pos : line;
-  car.z = axis === "x" ? line : car.ai.pos;
-  car.psi = 0;
-  scene.add(car.g);
-  cars.push(car);
+  veh.x = axis === "x" ? veh.ai.pos : line;
+  veh.z = axis === "x" ? line : veh.ai.pos;
+  veh.psi = 0;
+  scene.add(veh.g);
+  cars.push(veh);
 }
-for (let i = 0; i < 20; i++) spawnTraffic();
+for (let i = 0; i < 21; i++) spawnTraffic(i % 7 === 0 ? 1 : 0.12);
+
+// ---- Parked vehicles (lots, roadside, bike racks)
+function placeVehicle(veh, x, z, psi, y) {
+  veh.x = x;
+  veh.z = z;
+  veh.psi = psi;
+  veh.parked = true;
+  veh.g.position.set(x, y, z);
+  veh.g.rotation.y = psi;
+  veh.g.traverse((o) => {
+    if (o.isMesh) o.castShadow = false;
+  });
+  scene.add(veh.g);
+  cars.push(veh);
+  return veh;
+}
+const randCar = () =>
+    makeCar(
+      paintColors[(Math.random() * paintColors.length) | 0],
+      CAR_TYPES[(Math.random() * CAR_TYPES.length) | 0],
+    ),
+  randBike = () =>
+    makeBike(
+      paintColors[(Math.random() * paintColors.length) | 0],
+      BIKE_TYPES[(Math.random() * BIKE_TYPES.length) | 0],
+    );
+
+// parking lots: rows of stalls
+let lots = 0,
+  parkedCount = 0;
+lotBlocks.forEach((L) => {
+  lots++;
+  const rows = 2 + ((Math.random() * 2) | 0);
+  for (let r = 0; r < rows; r++) {
+    const z = L.z0 + 6 + r * ((L.z1 - L.z0 - 12) / Math.max(1, rows - 1));
+    for (let k = 0; k < 3; k++) {
+      const x = L.x0 + 5 + k * ((L.x1 - L.x0 - 10) / 2);
+      if (Math.random() < 0.3) continue;
+      const veh =
+        Math.random() < 0.18 ? randBike() : randCar();
+      const psi = Math.random() < 0.5 ? 0 : Math.PI;
+      placeVehicle(veh, x, z + (Math.random() - 0.5) * 1.2, psi, SIDE_Y);
+      parkedCount++;
+    }
+  }
+  // stall divider lines
+  const lineM = new THREE.MeshBasicMaterial({ color: 0xf0f0f0, ...pOff });
+  for (let r = 0; r < rows; r++) {
+    const z = L.z0 + 6 + r * ((L.z1 - L.z0 - 12) / Math.max(1, rows - 1));
+    for (let k = 0; k < 3; k++) {
+      const x = L.x0 + 4 + k * ((L.x1 - L.x0 - 8) / 2);
+      const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.03, 5), lineM);
+      stripe.position.set(x, SIDE_Y + 0.02, z);
+      scene.add(stripe);
+    }
+  }
+});
+
+// roadside parking along every road, plus occasional bike racks
+LINES.forEach((line) => {
+  for (const axis of ["z", "x"]) {
+    for (let p = -CITY + 30; p < CITY - 30; p += 55 + Math.random() * 45) {
+      if (Math.abs(p - Math.round(p / BLOCK) * BLOCK) < 14) continue;
+      const side = Math.random() < 0.5 ? 1 : -1;
+      const off = side * 6.8;
+      const x = axis === "z" ? line + off : p;
+      const z = axis === "z" ? p : line + off;
+      if (Math.hypot(x - (arcade ? arcade.x : 1e9), z - (arcade ? arcade.z : 1e9)) < 12)
+        continue;
+      if (Math.random() < 0.35) continue;
+      const veh = Math.random() < 0.14 ? randBike() : randCar();
+      const psi = axis === "z" ? (side > 0 ? 0 : Math.PI) : side > 0 ? -Math.PI / 2 : Math.PI / 2;
+      placeVehicle(veh, x, z, psi, 0);
+      parkedCount++;
+    }
+  }
+});
+// a couple of bike racks on sidewalks
+for (let n = 0; n < 5; n++) {
+  const line = LINES[(Math.random() * LINES.length) | 0];
+  const axis = Math.random() < 0.5 ? "z" : "x";
+  const p = (Math.random() * 1.6 - 0.8) * CITY;
+  const x = axis === "z" ? line + 13 : p;
+  const z = axis === "z" ? p : line + 13;
+  for (let k = 0; k < 3 + ((Math.random() * 3) | 0); k++) {
+    const veh = randBike();
+    const psi = axis === "z" ? 0 : Math.PI / 2;
+    placeVehicle(veh, x + (axis === "z" ? 0 : k * 1.1), z + (axis === "z" ? k * 1.1 : 0), psi, SIDE_Y);
+    parkedCount++;
+  }
+}
 
 // ---- Pedestrians
 const peds = [];
@@ -641,25 +890,39 @@ const M = 1300,
 const sgn = (v) => (v < 0 ? -1 : 1);
 
 function carStep(dt, inp) {
+  const spec = (occupied && occupied.spec) || CAR_SPECS.sedan;
+  const M = spec.mass,
+    A = spec.wbA,
+    B = spec.wbB,
+    L = A + B,
+    Iz = spec.Iz,
+    WR = spec.wr,
+    H = 0.5,
+    redline = spec.topRpm;
   const road = onRoad(occupied.x, occupied.z);
   const surf = road ? 1 : 0.55;
+  player.wr = WR;
   player.thr = inp.th;
   player.brk = inp.br && player.vx > 1;
   player.steer +=
     (inp.steer - player.steer) * Math.min(1, dt * (inp.steer ? 5 : 9));
   const v = Math.abs(player.vx);
   player.delta = (player.steer * 0.55) / (1 + Math.pow(v / 20, 1.6));
-  const mu = 1.5 * surf,
+  const mu = 1.5 * surf * spec.grip,
     mur = mu * (inp.hb ? 0.4 : 1);
   player.rpm = Math.max(1100, (v / WR) * GR[player.gear] * FD * 9.549);
-  if (player.rpm > 7000 && player.gear < 5) player.gear++;
-  else if (player.rpm < 3000 && player.gear > 0) player.gear--;
+  if (player.rpm > redline && player.gear < 5) player.gear++;
+  else if (player.rpm < redline * 0.43 && player.gear > 0) player.gear--;
   let Fx = 0,
     brk = 0;
   const tq =
-    player.rpm > 7700
+    player.rpm > redline + 650
       ? 0
-      : 420 * Math.max(0.25, 1 - Math.pow((player.rpm - 5200) / 4800, 2));
+      : spec.torque *
+        Math.max(
+          0.25,
+          1 - Math.pow((player.rpm - redline * 0.68) / (redline * 0.62), 2),
+        );
   if (inp.th) {
     if (player.vx < -1) brk = 1;
     else Fx = (tq * GR[player.gear] * FD * 0.88) / WR;
@@ -719,7 +982,7 @@ function carStep(dt, inp) {
   let nx = player.x + (player.vx * f[0] + player.vy * l[0]) * dt;
   let nz = player.z + (player.vx * f[1] + player.vy * l[1]) * dt;
   const p = { x: nx, z: nz };
-  if (resolve(p, 1.5)) {
+  if (resolve(p, spec.colR || 1.5)) {
     const dx = p.x - nx,
       dz = p.z - nz;
     const nl = Math.hypot(dx, dz) || 1;
@@ -852,7 +1115,7 @@ function toggleEnter() {
   } else {
     const c = nearestCar();
     if (!c) {
-      flash("NO CAR NEARBY", 900);
+      flash("NO VEHICLE NEARBY", 900);
       return;
     }
     occupied = c;
@@ -864,8 +1127,9 @@ function toggleEnter() {
     player.vx = player.vy = player.w = 0;
     player.gear = 0;
     player.axp = 0;
-    char.g.visible = false;
-    flash("CAR STOLEN", 900);
+    player.wr = c.spec ? c.spec.wr : WR;
+    char.g.visible = c.kind === "bike";
+    flash(c.kind === "bike" ? "BIKE STOLEN" : "CAR STOLEN", 900);
     bump(2);
   }
 }
@@ -945,7 +1209,20 @@ function trafficUpdate(dt) {
       }
       c.g.position.set(c.x, 0, c.z);
       c.g.rotation.y = c.psi;
-      c.wheels.forEach((w) => (w.rotation.x += (ai.speed * dt) / WR));
+      if (c.kind === "bike") {
+        const dp = Math.atan2(
+          Math.sin(c.psi - (c.pPsi || c.psi)),
+          Math.cos(c.psi - (c.pPsi || c.psi)),
+        );
+        const yaw = dp / Math.max(dt, 1e-3);
+        const lean = Math.atan2(Math.min(ai.speed, 30) * yaw, 9.81);
+        c.bank = (c.bank || 0) + (Math.max(-0.5, Math.min(0.5, lean)) - (c.bank || 0)) * Math.min(1, dt * 8);
+        c.b.rotation.z = c.bank;
+      }
+      c.pPsi = c.psi;
+      c.wheels.forEach(
+        (w) => (w.rotation.x += (ai.speed * dt) / (c.spec ? c.spec.wr : WR)),
+      );
     } else if (c !== occupied) {
       c.g.position.set(c.x, 0, c.z);
       c.g.rotation.y = c.psi;
@@ -1073,12 +1350,17 @@ function drawMini() {
     mm.lineTo(80 + CITY * scale, 80 + L * scale);
     mm.stroke();
   });
-  // traffic
-  mm.fillStyle = "#9aa4b2";
+  // traffic + parked
   for (const c of cars) {
     if (c === occupied) continue;
     const [a, b] = mp(c.x, c.z);
-    mm.fillRect(a - 1.5, b - 1.5, 3, 3);
+    if (c.kind === "bike") {
+      mm.fillStyle = c.ai ? "#c9d4e0" : "#7f8a98";
+      mm.fillRect(a - 1, b - 1, 2, 2);
+    } else {
+      mm.fillStyle = c.ai ? "#9aa4b2" : "#6f7885";
+      mm.fillRect(a - 1.5, b - 1.5, 3, 3);
+    }
   }
   // peds
   mm.fillStyle = "#ffe9a3";
@@ -1160,14 +1442,29 @@ function frame(now) {
   const f = [Math.sin(player.psi), Math.cos(player.psi)];
 
   if (player.mode === "car" && occupied) {
+    const bike = occupied.kind === "bike";
     occupied.x = player.x;
     occupied.z = player.z;
     occupied.psi = player.psi;
     occupied.g.position.set(player.x, groundY(player.x, player.z), player.z);
     occupied.g.rotation.y = player.psi;
-    occupied.b.rotation.z = 0;
-    occupied.b.rotation.x = -player.axp * 0.004;
-    whl += (player.vx * dt) / WR;
+    if (bike) {
+      const lean = -player.steer * Math.min(1, sp / 14) * 0.4;
+      occupied.b.rotation.z += (lean - occupied.b.rotation.z) * Math.min(1, dt * 6);
+      occupied.b.rotation.x = -player.axp * 0.002;
+      char.g.visible = true;
+      char.g.position.set(player.x, groundY(player.x, player.z), player.z);
+      char.g.rotation.y = player.psi;
+      char.g.rotation.z = occupied.b.rotation.z;
+      char.parts.lL.rotation.x = -1.15;
+      char.parts.lR.rotation.x = -1.15;
+      char.parts.aL.rotation.x = -0.55;
+      char.parts.aR.rotation.x = -0.55;
+    } else {
+      occupied.b.rotation.z = 0;
+      occupied.b.rotation.x = -player.axp * 0.004;
+    }
+    whl += (player.vx * dt) / (player.wr || WR);
     occupied.wheels.forEach((w) => (w.rotation.x = whl));
     occupied.fw.forEach((w) => (w.rotation.y = player.delta));
     occupied.tailM.emissiveIntensity = player.brk ? 4 : 0.6;
@@ -1196,6 +1493,7 @@ function frame(now) {
   } else {
     char.g.position.set(player.x, groundY(player.x, player.z), player.z);
     char.g.rotation.y = player.psi;
+    char.g.rotation.z = 0;
     const s = Math.sin(player.walkPhase) * Math.min(1, player.walkSpeed / 3);
     char.parts.lL.rotation.x = s * 0.6;
     char.parts.lR.rotation.x = -s * 0.6;
@@ -1208,7 +1506,7 @@ function frame(now) {
   dY = Math.atan2(Math.sin(dY), Math.cos(dY));
   camYaw += dY * Math.min(1, dt * (player.mode === "car" ? 4 : 3));
   if (player.mode === "car") {
-    if (hood) {
+    if (hood && occupied && occupied.kind !== "bike") {
       cam.position.set(
         player.x + f[0] * 0.4,
         1.15,
@@ -1256,21 +1554,30 @@ function frame(now) {
 
   // HUD
   if (++fr % 3 === 0) {
+    const onBike =
+      player.mode === "car" && occupied && occupied.kind === "bike";
     $("kmh").textContent = Math.round(sp * 3.6);
     $("gear").textContent =
       player.mode === "foot"
         ? "WALK"
-        : player.vx < -0.5
-          ? "R"
-          : sp < 0.5
-            ? "N"
-            : player.gear + 1;
+        : onBike
+          ? "BIKE"
+          : player.vx < -0.5
+            ? "R"
+            : sp < 0.5
+              ? "N"
+              : player.gear + 1;
     $("rpmf").style.width =
       Math.min(100, ((player.rpm - 1000) / 6800) * 100) + "%";
     $("hpf").style.width = Math.max(0, player.hp) + "%";
     const stars = Math.round(player.heat);
     $("wanted").textContent = stars > 0 ? "★".repeat(stars) : "–";
-    $("mode").textContent = player.mode === "car" ? "DRIVING" : "ON FOOT";
+    $("mode").textContent =
+      player.mode === "car"
+        ? onBike
+          ? "BIKING · " + occupied.spec.name
+          : "DRIVING"
+        : "ON FOOT";
     drawMini();
     if (msgT && now > msgT) {
       $("msg").textContent = "";
