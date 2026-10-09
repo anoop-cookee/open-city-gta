@@ -149,6 +149,44 @@ canvas#c {
   font-weight: 800;
   cursor: pointer;
 }
+#gameover {
+  position: fixed;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(rgba(70, 0, 0, 0.82), rgba(4, 0, 0, 0.95));
+  z-index: 25;
+  text-align: center;
+}
+#gameover.show {
+  display: flex;
+}
+#gameover h1 {
+  font-size: 64px;
+  letter-spacing: 12px;
+  margin: 0;
+  font-style: italic;
+  color: #ff3b30;
+  text-shadow: 0 0 26px rgba(255, 59, 48, 0.7);
+}
+#gameover p {
+  opacity: 0.8;
+  margin: 8px 0 26px;
+  max-width: 480px;
+  line-height: 1.6;
+}
+#gameover button {
+  font-size: 20px;
+  padding: 14px 44px;
+  border: 0;
+  border-radius: 40px;
+  background: #ff3b30;
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
 
 /* ---- Touch controls (touch devices only) */
 #touch {

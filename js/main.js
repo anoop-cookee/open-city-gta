@@ -436,6 +436,41 @@ function makeCar(color) {
   return { g, b, wheels, fw, tailM, brake: 0 };
 }
 
+function makePoliceCar() {
+  const car = makeCar(0x0e1116);
+  const white = new THREE.MeshStandardMaterial({
+    color: 0xeef1f5,
+    metalness: 0.4,
+    roughness: 0.4,
+  });
+  [-0.97, 0.97].forEach((x) => {
+    const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.42, 2.1), white);
+    stripe.position.set(x, 0.62, 0.05);
+    car.b.add(stripe);
+  });
+  const barBase = new THREE.Mesh(
+    new THREE.BoxGeometry(1.25, 0.12, 0.42),
+    new THREE.MeshStandardMaterial({ color: 0x0a0a0a, roughness: 0.6 }),
+  );
+  barBase.position.set(0, 1.3, -0.3);
+  car.b.add(barBase);
+  const mkLight = (color, x) => {
+    const mat = new THREE.MeshStandardMaterial({
+      color,
+      emissive: color,
+      emissiveIntensity: 1.4,
+      toneMapped: false,
+    });
+    const m = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.2, 0.34), mat);
+    m.position.set(x, 1.41, -0.3);
+    car.b.add(m);
+    return mat;
+  };
+  car.lightR = mkLight(0xff2b2b, 0.32);
+  car.lightL = mkLight(0x2b6bff, -0.32);
+  return car;
+}
+
 // ---- Character
 function makeChar() {
   const g = new THREE.Group();
@@ -742,6 +777,7 @@ function footStep(dt, inp) {
 // ---- Input
 const keys = {};
 let paused = false;
+let gameOver = false;
 let promptShown = false;
 const uiOpen = () => !!(window.MiniGames && window.MiniGames.isOpen);
 
@@ -757,7 +793,7 @@ function tryEnterArcade() {
 }
 
 addEventListener("keydown", (e) => {
-  if (uiOpen()) return;
+  if (uiOpen() || gameOver) return;
   keys[e.key.toLowerCase()] = 1;
   if (e.key === "c") hood = !hood;
   if (e.key === "r") resetPlayer();
@@ -766,7 +802,7 @@ addEventListener("keydown", (e) => {
   if (e.key === " ") e.preventDefault();
 });
 addEventListener("keyup", (e) => {
-  if (uiOpen()) return;
+  if (uiOpen() || gameOver) return;
   keys[e.key.toLowerCase()] = 0;
 });
 
@@ -988,7 +1024,7 @@ function animatePed(c, phase, amp) {
 }
 
 // ---- Audio
-let ac, o1, o2, gn;
+let ac, o1, o2, gn, sir, sirG;
 function audio() {
   ac = new (window.AudioContext || window.webkitAudioContext)();
   gn = ac.createGain();
@@ -1006,6 +1042,19 @@ function audio() {
   gn.connect(ac.destination);
   o1.start();
   o2.start();
+  sirG = ac.createGain();
+  sirG.gain.value = 0;
+  const sf = ac.createBiquadFilter();
+  sf.type = "bandpass";
+  sf.frequency.value = 850;
+  sf.Q.value = 1.2;
+  sir = ac.createOscillator();
+  sir.type = "square";
+  sir.frequency.value = 700;
+  sir.connect(sf);
+  sf.connect(sirG);
+  sirG.connect(ac.destination);
+  sir.start();
 }
 
 // ---- Minimap
@@ -1036,6 +1085,15 @@ function drawMini() {
   for (const pd of peds) {
     const [a, b] = mp(pd.c.g.position.x, pd.c.g.position.z);
     mm.fillRect(a - 1, b - 1, 2, 2);
+  }
+  // police
+  if (window.Police) {
+    const ph = (performance.now() / 140) | 0;
+    window.Police.units.forEach((u, i) => {
+      const [a, b] = mp(u.x, u.z);
+      mm.fillStyle = (ph + i) % 2 ? "#2b6bff" : "#ff2b2b";
+      mm.fillRect(a - 2.5, b - 2.5, 5, 5);
+    });
   }
   const [a, b] = mp(player.x, player.z);
   mm.fillStyle = "#ff3b30";
@@ -1071,7 +1129,7 @@ function frame(now) {
   requestAnimationFrame(frame);
   let dt = Math.min(0.05, (now - last) / 1000);
   last = now;
-  if (run && !paused) {
+  if (run && !paused && !gameOver) {
     acc += dt;
     while (acc >= 1 / 120) {
       if (player.mode === "car") carStep(1 / 120, inputState());
@@ -1081,6 +1139,7 @@ function frame(now) {
     trafficUpdate(dt);
     pedUpdate(dt);
     if (player.mode === "car") carWorldCollisions(dt);
+    if (window.Police) window.Police.update(dt, player);
     // heat cooldown
     heatCool += dt;
     if (heatCool > 3 && player.heat > 0) {
@@ -1223,6 +1282,15 @@ function frame(now) {
     o1.frequency.value = active ? player.rpm / 30 : 40;
     o2.frequency.value = active ? player.rpm / 60 : 20;
     gn.gain.value = active ? 0.05 + 0.06 * player.thr : 0;
+    const chasing =
+      window.Police &&
+      window.Police.units.length > 0 &&
+      player.heat > 0 &&
+      run &&
+      !paused &&
+      !gameOver;
+    sir.frequency.value = 640 + Math.sin(now / 100) * 240;
+    sirG.gain.value = chasing ? 0.05 : 0;
   }
   R.render(scene, cam);
 }
@@ -1263,6 +1331,45 @@ if (window.MiniGames) {
 }
 const promptEl = $("prompt");
 if (promptEl) promptEl.addEventListener("click", openArcade);
+
+// ---- Police pursuit + game over
+if (window.Police) {
+  window.Police.init({
+    scene,
+    resolve,
+    makePoliceCar,
+    onCaught: triggerGameOver,
+  });
+}
+
+function triggerGameOver() {
+  if (gameOver) return;
+  gameOver = true;
+  for (const k in keys) keys[k] = 0;
+  promptShown = false;
+  $("prompt").classList.remove("show");
+  const go = $("gameover");
+  if (go) go.classList.add("show");
+}
+
+function respawn() {
+  if (window.Police) window.Police.clear();
+  const go = $("gameover");
+  if (go) go.classList.remove("show");
+  if (player.mode === "car") toggleEnter();
+  player.hp = 100;
+  player.heat = 0;
+  heatCool = 0;
+  player.x = 0;
+  player.z = 0;
+  player.psi = 0;
+  player.vx = player.vy = player.w = 0;
+  for (const k in keys) keys[k] = 0;
+  gameOver = false;
+  flash("BACK ON THE STREETS", 1500);
+}
+const respawnEl = $("respawn");
+if (respawnEl) respawnEl.addEventListener("click", respawn);
 
 $("go").onclick = () => {
   $("start").remove();
